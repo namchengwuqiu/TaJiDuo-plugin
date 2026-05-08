@@ -41,6 +41,16 @@ function getPath(source, path, fallback) {
   return value === undefined ? fallback : value
 }
 
+function stableStringify(value) {
+  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`
+  if (!isPlainObject(value)) return JSON.stringify(value)
+  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`
+}
+
+function isEqual(a, b) {
+  return stableStringify(a) === stableStringify(b)
+}
+
 function toNumber(value, fallback) {
   if (value === '' || value === undefined || value === null) return fallback
   const number = Number(value)
@@ -146,6 +156,14 @@ function assignMessageConfig(result, messageConfig) {
   }
 }
 
+function saveChangedConfig(app, current, next) {
+  if (isEqual(current, next)) return true
+  const isDefault = isEqual(setting.getdefSet(app) || {}, next)
+  if (!setting.hasConfig(app) && isDefault) return true
+  if (['help', 'message'].includes(app) && isDefault) return setting.removeConfig(app)
+  return setting.setConfig(app, next)
+}
+
 export function supportGuoba() {
   const groupList = getGroupList()
 
@@ -206,7 +224,7 @@ export function supportGuoba() {
           if (Object.keys(commonData).length > 0) {
             const currentCommon = normalizeCommon(setting.getConfig('common') || {})
             const nextCommon = normalizeCommon(deepMerge(currentCommon, commonData))
-            if (setting.setConfig('common', nextCommon) === false) {
+            if (saveChangedConfig('common', currentCommon, nextCommon) === false) {
               return Result.error('common 配置保存失败，请检查文件权限')
             }
           }
@@ -214,7 +232,7 @@ export function supportGuoba() {
           if (Object.keys(signData).length > 0) {
             const currentSign = normalizeSign(setting.getConfig('sign') || {})
             const nextSign = normalizeSign(deepMerge(currentSign, signData))
-            if (setting.setConfig('sign', nextSign) === false) {
+            if (saveChangedConfig('sign', currentSign, nextSign) === false) {
               return Result.error('sign 配置保存失败，请检查文件权限')
             }
           }
@@ -222,7 +240,7 @@ export function supportGuoba() {
           if (Object.keys(messageData).length > 0) {
             const currentMessage = setting.getConfig('message') || {}
             const nextMessage = deepMerge(currentMessage, messageData)
-            if (setting.setConfig('message', nextMessage) === false) {
+            if (saveChangedConfig('message', currentMessage, nextMessage) === false) {
               return Result.error('message 配置保存失败，请检查文件权限')
             }
           }
@@ -230,7 +248,7 @@ export function supportGuoba() {
           if (Object.keys(helpData).length > 0) {
             const currentHelp = normalizeHelp(setting.getConfig('help') || {})
             const nextHelp = normalizeHelp(deepMerge(currentHelp, helpData))
-            if (setting.setConfig('help', nextHelp) === false) {
+            if (saveChangedConfig('help', currentHelp, nextHelp) === false) {
               return Result.error('help 配置保存失败，请检查文件权限')
             }
           }

@@ -84,6 +84,27 @@ class Setting {
     return this.getYaml(app, 'data')
   }
 
+  hasConfig(app) {
+    return fs.existsSync(`${this.configPath}${app}.yaml`)
+  }
+
+  removeConfig(app) {
+    const file = `${this.configPath}${app}.yaml`
+    if (!fs.existsSync(file)) return true
+    try {
+      fs.unlinkSync(file)
+      if (this.config?.[app]) delete this.config[app]
+      if (this.watcher.config?.[app]) {
+        this.watcher.config[app].close()
+        delete this.watcher.config[app]
+      }
+      return true
+    } catch (error) {
+      logger.error(`[TaJiDuo-plugin][${app}] 删除配置失败 ${error}`)
+      return false
+    }
+  }
+
   setConfig(app, data) {
     return this.setYaml(app, 'config', { ...this.getdefSet(app), ...data })
   }

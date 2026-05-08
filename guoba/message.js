@@ -9,7 +9,7 @@ export default function getMessageSchemas() {
       component: 'Alert',
       componentProps: {
         type: 'info',
-        message: '文案支持原有占位符，例如 {game}、{message}、{taskId}。保存后写入 config/message.yaml。'
+        message: '文案支持原有占位符，例如 {game}、{message}、{taskId}。内容改动后写入 config/message.yaml。'
       }
     },
     {
