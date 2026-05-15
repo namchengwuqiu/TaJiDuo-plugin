@@ -321,6 +321,9 @@ export default class TaJiDuoApi {
       yihuan_team: {
         url: `${baseUrl}/api/v1/games/yihuan/team`,
         query: queryString({ roleId: data.roleId })
+      },
+      yihuan_gacha: {
+        url: `${baseUrl}/api/v1/games/yihuan/gacha`
       }
     }
   }

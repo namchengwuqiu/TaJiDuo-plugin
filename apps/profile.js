@@ -720,6 +720,71 @@ function buildYihuanPanelMessages(character = {}, role = {}) {
   return messages.filter((message) => cleanSpaces(message))
 }
 
+function formatGachaValue(value, fallback = '暂无') {
+  return value === undefined || value === null || value === '' ? fallback : String(value)
+}
+
+function formatGachaTime(item = {}) {
+  const timeStamp = Number(item.timeStamp ?? item.timestamp ?? 0)
+  if (!Number.isFinite(timeStamp) || timeStamp <= 0) return ''
+  return formatTime(timeStamp < 1e12 ? timeStamp * 1000 : timeStamp)
+}
+
+function gachaItemName(item = {}) {
+  return item.itemName || item.name || item.charName || item.characterName || item.charid || item.charId || item.id || '未知记录'
+}
+
+function formatGachaDetailLine(item = {}) {
+  const parts = [gachaItemName(item)]
+  if (item.rareCount !== undefined && item.rareCount !== '') parts.push(`${item.rareCount} 抽`)
+  const time = formatGachaTime(item)
+  if (time) parts.push(time)
+  if (item.luckyType !== undefined && item.luckyType !== '') parts.push(`类型 ${item.luckyType}`)
+  return parts.join(' | ')
+}
+
+function buildYihuanGachaMessages(data = {}) {
+  const pools = toArray(data.gachaDetails)
+  const totalDraw = pools.reduce((sum, item) => sum + (Number(item.drawCount) || 0), 0)
+  const totalRare = pools.reduce((sum, item) => sum + (Number(item.rareCount) || 0), 0)
+  const header = [
+    '异环抽卡分析',
+    compactLine('角色', data.rolename || data.roleName || data.userid),
+    compactLine('UID', data.roleid || data.roleId || data.uid),
+    compactLine('等级', data.lev),
+    compactLine('欧气评价', data.luckTitle),
+    compactLine('总抽数', totalDraw || data.drawCount),
+    compactLine('稀有次数', totalRare || data.rareCount),
+    compactLine('池子数量', pools.length)
+  ]
+  const messages = [header.join('\n')]
+
+  for (const pool of pools) {
+    const details = toArray(pool.details)
+    const lines = [
+      pool.tab || pool.name || '未命名卡池',
+      compactLine('抽数', pool.drawCount),
+      compactLine('稀有次数', pool.rareCount),
+      compactLine('平均出货', formatGachaValue(pool.average)),
+      compactLine('超过玩家', formatGachaValue(pool.playerOver)),
+      compactLine('保底', formatGachaValue(pool.m))
+    ]
+    if (details.length > 0) {
+      lines.push('出货记录：')
+      details.slice(0, 20).forEach((item, index) => {
+        lines.push(`${index + 1}. ${formatGachaDetailLine(item)}`)
+      })
+      if (details.length > 20) lines.push(`还有 ${details.length - 20} 条记录未展示`)
+    } else {
+      lines.push('暂无出货记录')
+    }
+    messages.push(lines.join('\n'))
+  }
+
+  if (pools.length === 0) messages.push(getMessage('common.no_data'))
+  return messages.filter((message) => cleanSpaces(message))
+}
+
 function filterByQuery(items = [], query = '') {
   const terms = searchTerms(query)
   if (terms.length === 0) return items
@@ -799,6 +864,10 @@ export class profile extends plugin {
         {
           reg: `^${PREFIX.yihuan}(?:[刷更]新面[板版]|面板[刷更]新|强制刷新)$`,
           fnc: 'yihuanCharacters'
+        },
+        {
+          reg: `^${PREFIX.yihuan}(抽卡分析|抽卡统计|抽卡)$`,
+          fnc: 'yihuanGacha'
         },
         {
           reg: `^${PREFIX.yihuan}\\s*.+?\\s*(?:面板|信息|详情)$`,
@@ -984,6 +1053,21 @@ export class profile extends plugin {
     }
     if (items.length === 0) lines.push(getMessage('common.no_data'))
     await this.reply(lines.join('\n'))
+    return true
+  }
+
+  async yihuanGacha() {
+    const tjdUser = await this.getCurrentUser()
+    if (!tjdUser) return true
+
+    const res = await tjdUser.tjdReq.getData('yihuan_gacha')
+    if (!res || Number(res.code) !== 0) {
+      await this.reply(getMessage('common.request_failed', { error: summarizeApiError(res) }))
+      return true
+    }
+
+    const data = dataBody(res)
+    await this.replyForward(buildYihuanGachaMessages(data), '异环抽卡分析')
     return true
   }
 

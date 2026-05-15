@@ -95,6 +95,8 @@
 | `GET /api/v1/games/yihuan/real-estate` | 房产数据 |
 | `GET /api/v1/games/yihuan/vehicles` | 载具数据 |
 | `GET /api/v1/games/yihuan/team` | 配队推荐 |
+| `GET /api/v1/games/yihuan/team/recommendations` | 匿名配队推荐 |
+| `GET /api/v1/games/yihuan/gacha` | 抽卡统计 |
 | `GET /api/v1/games/yihuan/sign/state` | 游戏签到状态 |
 | `GET /api/v1/games/yihuan/sign/rewards` | 游戏签到奖励表 |
 | `GET /api/v1/games/yihuan/sign/resign-info` | 游戏补签信息 |
@@ -106,6 +108,7 @@
 | `GET /api/v1/games/yihuan/community/sign/tasks/:taskId` | 查询异环社区任务状态 |
 | `GET /api/v1/games/yihuan/community/sign/state` | 社区签到状态 |
 | `GET /api/v1/games/yihuan/community/tasks` | 社区任务列表 |
+| `GET /api/v1/games/yihuan/community/unread-count` | 社区未读数 |
 | `GET /api/v1/games/yihuan/community/exp/level` | 社区等级 |
 | `GET /api/v1/games/yihuan/community/exp/records` | 社区经验流水 |
 

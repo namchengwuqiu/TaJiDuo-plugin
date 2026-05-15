@@ -76,6 +76,7 @@ X-Framework-Token: 0d53c6f8f56f4d7abf53dbf4f68e7856
 | `GET` | `/api/v1/games/yihuan/vehicles` | Query：`roleId` 必填 | `data`、`upstream` |
 | `GET` | `/api/v1/games/yihuan/team` | 无 | `data`、`upstream` |
 | `GET` | `/api/v1/games/yihuan/team/recommendations` | 无 | `data`、`upstream` |
+| `GET` | `/api/v1/games/yihuan/gacha` | 无 | `data`、`upstream` |
 | `GET` | `/api/v1/games/yihuan/sign/state` | 无 | `gameId`、`day`、`days`、`month`、`reSignCnt`、`todaySign` |
 | `GET` | `/api/v1/games/yihuan/sign/rewards` | Query：`roleId` 可选 | `gameId`、`roleId`、`items` |
 | `GET` | `/api/v1/games/yihuan/sign/resign-info` | 无 | `gameId`、`coin`、`cost`、`reSignCnt`、`reSignLimit`、`todaySign` |
@@ -87,6 +88,7 @@ X-Framework-Token: 0d53c6f8f56f4d7abf53dbf4f68e7856
 | `GET` | `/api/v1/games/yihuan/community/sign/tasks/:taskId` | Path：`taskId` 必填 | 任务状态和执行结果 |
 | `GET` | `/api/v1/games/yihuan/community/sign/state` | 无 | `communityId`、`signed` |
 | `GET` | `/api/v1/games/yihuan/community/tasks` | Query：`gid` 可选，默认 `2` | `communityId`、`gid`、`groups` |
+| `GET` | `/api/v1/games/yihuan/community/unread-count` | 无 | `communityId`、`data`、`upstream` |
 | `GET` | `/api/v1/games/yihuan/community/exp/level` | 无 | `communityId`、等级和经验字段 |
 | `GET` | `/api/v1/games/yihuan/community/exp/records` | 无 | `communityId`、`items` |
 
@@ -636,6 +638,75 @@ GET /api/v1/games/yihuan/team/recommendations
   }
 }
 ```
+
+#### `GET /api/v1/games/yihuan/gacha`
+
+用途：获取异环抽卡统计。
+
+请求示例：
+
+```http
+GET /api/v1/games/yihuan/gacha
+X-API-Key: your-api-key
+X-Framework-Token: 0d53c6f8f56f4d7abf53dbf4f68e7856
+```
+
+响应示例：
+
+```json
+{
+  "code": 0,
+  "message": "成功",
+  "data": {
+    "data": {
+      "roleid": "123456789000",
+      "rolename": "示例角色",
+      "userid": "9_100000000",
+      "lev": 41,
+      "luckTitle": "欧气满满",
+      "luckType": 12,
+      "gachaDetails": [
+        {
+          "tab": "限定卡池",
+          "drawCount": 110,
+          "rareCount": 2,
+          "average": "55.0",
+          "playerOver": "47%",
+          "m": 90,
+          "details": [
+            {
+              "charid": "1052",
+              "itemName": "铂鸢",
+              "itemType": "char",
+              "aliases": [
+                "铂鸢"
+              ],
+              "luckyType": 0,
+              "rareCount": 54,
+              "time": "2026-05-14",
+              "timeStamp": 1778127538262
+            }
+          ]
+        }
+      ]
+    },
+    "upstream": {
+      "success": true,
+      "httpStatus": 200,
+      "code": 0,
+      "message": "ok"
+    }
+  }
+}
+```
+
+说明：
+
+- 必须显式传 `fwt`
+- 该接口按当前登录态返回异环抽卡统计，不需要额外传 `roleId`
+- `details[].charid` 是平台原始 ID；如果后台资源同步已完成，会额外补充 `itemName`、`itemType` 和 `aliases`
+- `itemType=char` 表示角色，`itemType=fork` 表示弧盘
+- 常见池子包括 `限定卡池`、`常驻卡池`、`弧盘池`，具体以平台实际返回为准
 
 ### `GET /api/v1/games/yihuan/sign/state`
 
@@ -1288,6 +1359,51 @@ X-Framework-Token: 0d53c6f8f56f4d7abf53dbf4f68e7856
   - `send_comment_exp`
   - `like_post_exp`
 - 上游还可能返回 `被点赞帖子`、`被回复`、`被收藏` 等其他任务项，具体 `taskKey` 以上游实际返回为准
+
+### `GET /api/v1/games/yihuan/community/unread-count`
+
+用途：获取当前账号的异环社区未读数。
+
+请求头：
+
+```http
+X-API-Key: your-api-key
+X-Framework-Token: 0d53c6f8f56f4d7abf53dbf4f68e7856
+```
+
+响应示例：
+
+```json
+{
+  "code": 0,
+  "message": "成功",
+  "data": {
+    "communityId": "2",
+    "data": {
+      "notificationUnread": {
+        "at": 0,
+        "channelUnread": 0,
+        "comment": 29,
+        "follow": 0,
+        "like": 93,
+        "system": 0,
+        "uid": 10001
+      }
+    },
+    "upstream": {
+      "success": true,
+      "httpStatus": 200,
+      "code": 0,
+      "message": "ok"
+    }
+  }
+}
+```
+
+说明：
+
+- 必须显式传 `fwt`
+- 该接口使用异环模块的社区上下文返回，`communityId` 固定为 `2`
 
 ### `GET /api/v1/games/yihuan/community/exp/level`
 
