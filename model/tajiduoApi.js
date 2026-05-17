@@ -324,6 +324,24 @@ export default class TaJiDuoApi {
       },
       yihuan_gacha: {
         url: `${baseUrl}/api/v1/games/yihuan/gacha`
+      },
+      yihuan_gacha_task: {
+        url: `${baseUrl}/api/v1/games/yihuan/gacha/tasks`,
+        method: 'post',
+        body: {
+          forceRefresh: data.forceRefresh ?? true,
+          maxAgeSeconds: data.maxAgeSeconds
+        }
+      },
+      yihuan_gacha_task_status: {
+        url: `${baseUrl}/api/v1/games/yihuan/gacha/tasks/${encodeURIComponent(data.taskId || '')}`
+      },
+      yihuan_gacha_task_result: {
+        url: `${baseUrl}/api/v1/games/yihuan/gacha/tasks/${encodeURIComponent(data.taskId || '')}/result`
+      },
+      yihuan_gacha_stats: {
+        url: `${baseUrl}/api/v1/games/yihuan/gacha/stats`,
+        query: queryString(data, ['pool', 'tab', 'itemType', 'charid', 'itemId', 'itemName', 'keyword', 'roleId', 'userId', 'from', 'to', 'limit'])
       }
     }
   }

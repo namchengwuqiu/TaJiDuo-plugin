@@ -96,7 +96,11 @@
 | `GET /api/v1/games/yihuan/vehicles` | 载具数据 |
 | `GET /api/v1/games/yihuan/team` | 配队推荐 |
 | `GET /api/v1/games/yihuan/team/recommendations` | 匿名配队推荐 |
-| `GET /api/v1/games/yihuan/gacha` | 抽卡统计 |
+| `GET /api/v1/games/yihuan/gacha` | 抽卡最新缓存结果 |
+| `POST /api/v1/games/yihuan/gacha/tasks` | 提交抽卡刷新任务 |
+| `GET /api/v1/games/yihuan/gacha/tasks/:taskId` | 查询抽卡刷新任务 |
+| `GET /api/v1/games/yihuan/gacha/tasks/:taskId/result` | 查询抽卡任务结果 |
+| `GET /api/v1/games/yihuan/gacha/stats` | 全服抽卡统计 |
 | `GET /api/v1/games/yihuan/sign/state` | 游戏签到状态 |
 | `GET /api/v1/games/yihuan/sign/rewards` | 游戏签到奖励表 |
 | `GET /api/v1/games/yihuan/sign/resign-info` | 游戏补签信息 |

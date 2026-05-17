@@ -76,7 +76,11 @@ X-Framework-Token: 0d53c6f8f56f4d7abf53dbf4f68e7856
 | `GET` | `/api/v1/games/yihuan/vehicles` | Query：`roleId` 必填 | `data`、`upstream` |
 | `GET` | `/api/v1/games/yihuan/team` | 无 | `data`、`upstream` |
 | `GET` | `/api/v1/games/yihuan/team/recommendations` | 无 | `data`、`upstream` |
-| `GET` | `/api/v1/games/yihuan/gacha` | 无 | `data`、`upstream` |
+| `GET` | `/api/v1/games/yihuan/gacha` | 无 | 当前账号最新抽卡缓存结果 |
+| `POST` | `/api/v1/games/yihuan/gacha/tasks` | JSON：`forceRefresh`、`maxAgeSeconds` 可选 | 提交抽卡刷新任务 |
+| `GET` | `/api/v1/games/yihuan/gacha/tasks/:taskId` | Path：`taskId` 必填 | 抽卡刷新任务状态 |
+| `GET` | `/api/v1/games/yihuan/gacha/tasks/:taskId/result` | Path：`taskId` 必填 | 抽卡刷新任务结果 |
+| `GET` | `/api/v1/games/yihuan/gacha/stats` | Query：卡池、物品、角色、时间范围筛选可选 | 全服抽卡统计 |
 | `GET` | `/api/v1/games/yihuan/sign/state` | 无 | `gameId`、`day`、`days`、`month`、`reSignCnt`、`todaySign` |
 | `GET` | `/api/v1/games/yihuan/sign/rewards` | Query：`roleId` 可选 | `gameId`、`roleId`、`items` |
 | `GET` | `/api/v1/games/yihuan/sign/resign-info` | 无 | `gameId`、`coin`、`cost`、`reSignCnt`、`reSignLimit`、`todaySign` |
@@ -641,7 +645,11 @@ GET /api/v1/games/yihuan/team/recommendations
 
 #### `GET /api/v1/games/yihuan/gacha`
 
-用途：获取异环抽卡统计。
+用途：读取当前账号后端数据库中的最新异环抽卡统计缓存。
+
+查询参数：无
+
+说明：该接口只读缓存，不提交刷新任务。如果需要请求上游并写库，请先调用 `POST /api/v1/games/yihuan/gacha/tasks`。
 
 请求示例：
 
@@ -659,20 +667,24 @@ X-Framework-Token: 0d53c6f8f56f4d7abf53dbf4f68e7856
   "message": "成功",
   "data": {
     "data": {
-      "roleid": "123456789000",
-      "rolename": "示例角色",
-      "userid": "9_100000000",
-      "lev": 41,
-      "luckTitle": "欧气满满",
-      "luckType": 12,
-      "gachaDetails": [
+      "accountUid": "10193432",
+      "roleId": "123456789000",
+      "roleName": "示例角色",
+      "userId": "9_100000000",
+      "profile": {
+        "lev": 41,
+        "luckTitle": "欧气满满",
+        "luckType": 12
+      },
+      "pools": [
         {
-          "tab": "限定卡池",
+          "pool": "限定卡池",
           "drawCount": 110,
           "rareCount": 2,
           "average": "55.0",
           "playerOver": "47%",
           "m": 90,
+          "recordCount": 1,
           "details": [
             {
               "charid": "1052",
@@ -684,17 +696,42 @@ X-Framework-Token: 0d53c6f8f56f4d7abf53dbf4f68e7856
               "luckyType": 0,
               "rareCount": 54,
               "time": "2026-05-14",
-              "timeStamp": 1778127538262
+              "timeStamp": 1778127538262,
+              "drawAt": "2026-05-14T00:00:00Z",
+              "raw": {
+                "charid": "1052",
+                "luckyType": 0,
+                "rareCount": 54
+              }
             }
           ]
         }
-      ]
+      ],
+      "summary": {
+        "poolCount": 1,
+        "totalDrawCount": 110,
+        "rareCount": 2,
+        "detailCount": 110,
+        "recordCount": 1
+      },
+      "fetchedAt": "2026-05-17T11:30:00Z",
+      "updatedAt": "2026-05-17T11:30:00Z"
     },
     "upstream": {
       "success": true,
       "httpStatus": 200,
       "code": 0,
       "message": "ok"
+    },
+    "cache": {
+      "exists": true,
+      "accountUid": "10193432",
+      "roleId": "123456789000",
+      "roleName": "示例角色",
+      "userId": "9_100000000",
+      "fetchedAt": "2026-05-17T11:30:00Z",
+      "updatedAt": "2026-05-17T11:30:00Z",
+      "stale": false
     }
   }
 }
@@ -703,10 +740,188 @@ X-Framework-Token: 0d53c6f8f56f4d7abf53dbf4f68e7856
 说明：
 
 - 必须显式传 `fwt`
-- 该接口按当前登录态返回异环抽卡统计，不需要额外传 `roleId`
-- `details[].charid` 是平台原始 ID；如果后台资源同步已完成，会额外补充 `itemName`、`itemType` 和 `aliases`
+- 该接口按当前登录态读取数据库缓存，不需要额外传 `roleId`
+- 该接口不会请求上游，也不会创建后台任务
+- 首次无缓存时返回 `data=null`、`cache.exists=false`
+- `data.pools` 是后端从数据库归一化明细表组装出的卡池列表，不再直接透传上游字段 `gachaDetails`
+- `pools[].drawCount`、`pools[].rareCount`、`pools[].average`、`pools[].playerOver`、`pools[].m` 会稳定返回；优先来自上游卡池汇总缓存，旧缓存缺少汇总时会用出货记录的 `rareCount` 兜底计算 `drawCount`、`rareCount`、`average` 和 `m`
+- `pools[].recordCount` 是当前缓存中的出货记录条数
+- `summary.totalDrawCount` / `summary.detailCount` 表示上游总抽数；`summary.recordCount` 表示出货记录条数
+- `pools[].details[].charid` 是平台原始 ID；如果后台资源同步已完成，会额外补充 `itemName`、`itemType` 和 `aliases`
+- `pools[].details[].raw` 保留当前明细的原始字段，便于后续扩展
 - `itemType=char` 表示角色，`itemType=fork` 表示弧盘
 - 常见池子包括 `限定卡池`、`常驻卡池`、`弧盘池`，具体以平台实际返回为准
+
+#### `POST /api/v1/games/yihuan/gacha/tasks`
+
+用途：提交异环抽卡缓存刷新任务。任务会在后台请求上游、补全资源信息并写入数据库。
+
+请求体：
+
+- `forceRefresh`：可选，`true` 时强制创建新任务并请求上游；默认 `false`
+- `maxAgeSeconds`：可选，大于 `0` 时如果当前缓存未超过该秒数，任务会直接完成并复用缓存，不请求上游
+
+请求示例：
+
+```http
+POST /api/v1/games/yihuan/gacha/tasks
+X-API-Key: your-api-key
+X-Framework-Token: 0d53c6f8f56f4d7abf53dbf4f68e7856
+Content-Type: application/json
+
+{
+  "maxAgeSeconds": 3600
+}
+```
+
+响应示例：
+
+```json
+{
+  "code": 0,
+  "message": "成功",
+  "data": {
+    "created": true,
+    "task": {
+      "taskId": "yhga_2c4d8f0c8b0c45cb9ebc32104b1b8f0a",
+      "accountUid": "10193432",
+      "status": "pending",
+      "message": "刷新任务已创建",
+      "maxAgeSeconds": 3600,
+      "recordsFound": 0,
+      "newRecords": 0,
+      "createdAt": "2026-05-17T11:31:00Z"
+    }
+  }
+}
+```
+
+说明：
+
+- `created=false` 表示当前账号已有 `pending/running` 任务，接口返回该任务
+- 如果 `maxAgeSeconds` 命中有效缓存，返回的任务会直接是 `finished`，消息为 `缓存有效，未请求上游`
+- 任务完成后 `task.recordsFound` 表示本次上游返回的出货记录条数，`task.newRecords` 表示相对刷新前缓存的新增出货记录数，`task.newItems` 为新增记录明细
+
+#### `GET /api/v1/games/yihuan/gacha/tasks/:taskId`
+
+用途：查询抽卡缓存刷新任务状态。
+
+请求示例：
+
+```http
+GET /api/v1/games/yihuan/gacha/tasks/yhga_2c4d8f0c8b0c45cb9ebc32104b1b8f0a
+X-API-Key: your-api-key
+X-Framework-Token: 0d53c6f8f56f4d7abf53dbf4f68e7856
+```
+
+说明：
+
+- 只允许查询当前 `fwt` 对应账号的刷新任务
+- `status` 取值：`pending`、`running`、`finished`、`failed`
+- 该接口只返回任务状态，不返回抽卡结果
+
+#### `GET /api/v1/games/yihuan/gacha/tasks/:taskId/result`
+
+用途：查询抽卡刷新任务结果。
+
+请求示例：
+
+```http
+GET /api/v1/games/yihuan/gacha/tasks/yhga_2c4d8f0c8b0c45cb9ebc32104b1b8f0a/result
+X-API-Key: your-api-key
+X-Framework-Token: 0d53c6f8f56f4d7abf53dbf4f68e7856
+```
+
+响应说明：
+
+- 返回结构与 `GET /api/v1/games/yihuan/gacha` 一致，并额外包含 `task`
+- 任务未完成或失败时，`data` 可能为 `null`，请优先查看 `task.status` 和 `task.error`
+
+#### `GET /api/v1/games/yihuan/gacha/stats`
+
+用途：基于已缓存的抽卡明细做全服统计。
+
+查询参数：
+
+- `pool` / `tab`：卡池名，例如 `限定卡池`
+- `itemType`：物品类型，例如 `char`、`fork`
+- `charid` / `itemId`：平台原始物品 ID
+- `itemName`：物品名称，精确匹配
+- `keyword`：在卡池、物品名、物品 ID 中模糊搜索
+- `roleId`：角色 ID
+- `userId`：平台返回的用户标识
+- `from` / `to`：抽取时间范围，支持 RFC3339、`YYYY-MM-DD`、秒时间戳、毫秒时间戳
+- `limit`：每个统计列表返回数量，默认 `50`，最大 `200`
+
+请求示例：
+
+```http
+GET /api/v1/games/yihuan/gacha/stats?pool=限定卡池&itemType=char&limit=20
+X-API-Key: your-api-key
+```
+
+响应示例：
+
+```json
+{
+  "code": 0,
+  "message": "成功",
+  "data": {
+    "filters": {
+      "pool": "限定卡池",
+      "itemType": "char",
+      "limit": 20
+    },
+    "summary": {
+      "totalDraws": 1280,
+      "recordCount": 25,
+      "rareCount": 25,
+      "totalUsers": 42,
+      "totalRoles": 42,
+      "lastFetchedAt": "2026-05-17T11:30:00Z"
+    },
+    "pools": [
+      {
+        "pool": "限定卡池",
+        "draws": 1280,
+        "rareCount": 25,
+        "recordCount": 25,
+        "users": 42,
+        "roles": 42
+      }
+    ],
+    "items": [
+      {
+        "charid": "1052",
+        "itemName": "铂鸢",
+        "itemType": "char",
+        "pool": "限定卡池",
+        "draws": 25,
+        "users": 21,
+        "roles": 21,
+        "averagePity": 54.4
+      }
+    ],
+    "roles": [
+      {
+        "roleId": "123456789000",
+        "roleName": "示例角色",
+        "userId": "9_100000000",
+        "draws": 110,
+        "recordCount": 2,
+        "pools": 1
+      }
+    ]
+  }
+}
+```
+
+说明：
+
+- 统计只基于已经刷新进数据库的账号缓存，不主动请求上游
+- `summary.totalDraws`、`pools[].draws`、`roles[].draws` 表示按出货记录 `rareCount` 汇总后的抽数；`recordCount` / `rareCount` 表示出货记录条数
+- `items[].draws` 表示该物品的出货次数，`items[].averagePity` 表示该物品平均出货抽数
+- 统计表保存了上游原始明细 `detail`，后续可扩展更多维度
 
 ### `GET /api/v1/games/yihuan/sign/state`
 
