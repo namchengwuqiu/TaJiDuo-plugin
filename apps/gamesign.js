@@ -352,9 +352,11 @@ export class gamesign extends plugin {
     this.setting = setting.getConfig('sign') || {}
     if (this.setting.auto_sign === false) return true
 
-    const lines = ['TaJiDuo-plugin 自动签到完成']
-    const stats = await this.runSignTask()
-    lines.push(`塔吉多签到：账号 ${stats.total}，成功 ${stats.success}，失败 ${stats.fail}`)
+    const lines = []
+    const huantaStats = await this.runSignTask('huanta')
+    const yihuanStats = await this.runSignTask('yihuan')
+    lines.push(`幻塔签到：账号 ${huantaStats.total}，成功 ${huantaStats.success}，失败 ${huantaStats.fail}`)
+    lines.push(`异环签到：账号 ${yihuanStats.total}，成功 ${yihuanStats.success}，失败 ${yihuanStats.fail}`)
     await this.sendNotifyList(lines.join('\n'))
     return true
   }
