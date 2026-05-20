@@ -783,6 +783,137 @@ function formatGachaDetailLine(item = {}) {
   return parts.join(' | ')
 }
 
+const GACHA_RATING_TABLE = [
+  { limit: 15, label: '欧气附体天选人' },
+  { limit: 40, label: '协议签订幸运儿' },
+  { limit: 60, label: '普普通通路人王' },
+  { limit: 75, label: '伊波恩打工仔' },
+  { limit: Infinity, label: '异象重点关照对象' }
+]
+
+function gachaNumber(value, fallback = 0) {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : fallback
+}
+
+function gachaRatingIndex(total = 0, ssr = 0) {
+  if (ssr <= 0) return -1
+  const avg = total / ssr
+  return GACHA_RATING_TABLE.findIndex((item) => avg <= item.limit)
+}
+
+function gachaRating(total = 0, ssr = 0) {
+  if (ssr > 0) return GACHA_RATING_TABLE[gachaRatingIndex(total, ssr)]?.label || GACHA_RATING_TABLE.at(-1).label
+  return total <= 50 ? '囤囤鼠' : '薛定谔的抽卡人'
+}
+
+function gachaMoodImage(total = 0, ssr = 0) {
+  const index = gachaRatingIndex(total, ssr)
+  return index >= 0 ? String(index).padStart(2, '0') : 'default'
+}
+
+function gachaBannerImage(section = {}) {
+  const name = String(section.bannerName || section.bannerType || section.tab || section.pool || section.name || '')
+  if (name.includes('弧盘')) return 'purple'
+  if (name.includes('限定')) return 'pink'
+  return 'blue'
+}
+
+function gachaSectionRank(section = {}) {
+  const name = String(section.bannerName || section.bannerType || section.tab || section.pool || section.name || '')
+  if (name.includes('限定')) return 0
+  if (name.includes('弧盘')) return 1
+  if (name.includes('常驻')) return 2
+  return 99
+}
+
+function gachaTimestamp(value) {
+  const timeStamp = Number(value ?? 0)
+  if (!Number.isFinite(timeStamp) || timeStamp <= 0) return 0
+  return timeStamp < 1e12 ? timeStamp * 1000 : timeStamp
+}
+
+function gachaShortTime(item = {}) {
+  const timeStamp = gachaTimestamp(item.timeStamp ?? item.timestamp)
+  if (!timeStamp) return ''
+  const date = new Date(timeStamp)
+  if (Number.isNaN(date.getTime())) return ''
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}.${month}.${day}`
+}
+
+function gachaItemId(item = {}) {
+  return String(item.charid || item.charId || item.itemId || item.id || '').trim()
+}
+
+function gachaItemIconUrl(item = {}) {
+  const id = gachaItemId(item)
+  if (id.startsWith('fork_')) return weaponImageUrl(id)
+  return characterAvatarUrl(id || '1')
+}
+
+function gachaPityClass(pity = 0) {
+  const value = gachaNumber(pity, 0)
+  if (value > 0 && value <= 30) return 'pity-lucky'
+  if (value > 80) return 'pity-hard'
+  return ''
+}
+
+function buildYihuanGachaRenderData(e, data = {}) {
+  const profile = data.profile || {}
+  const summary = data.summary || {}
+  const rawPools = toArray(data.pools || data.gachaDetails)
+  const poolDraw = rawPools.reduce((sum, item) => sum + gachaNumber(item.drawCount), 0)
+  const poolRare = rawPools.reduce((sum, item) => sum + gachaNumber(item.rareCount), 0)
+  const totalPullCount = gachaNumber(summary.totalDrawCount ?? summary.detailCount ?? data.drawCount, poolDraw)
+  const totalSsrCount = gachaNumber(summary.rareCount ?? data.rareCount, poolRare)
+  const sections = rawPools
+    .map((pool) => {
+      const details = toArray(pool.details)
+        .map((item) => {
+          const pity = gachaNumber(item.rareCount ?? item.pity ?? item.itemCount, 0)
+          return {
+            name: String(gachaItemName(item)).replace(/角色卡$/, ''),
+            iconUrl: gachaItemIconUrl(item),
+            pity,
+            pityClass: gachaPityClass(pity),
+            timeText: gachaShortTime(item)
+          }
+        })
+        .sort((a, b) => String(b.timeText).localeCompare(String(a.timeText)))
+
+      const total = gachaNumber(pool.drawCount)
+      const ssr = gachaNumber(pool.rareCount, details.length)
+      return {
+        bannerName: pool.pool || pool.tab || pool.name || '未命名卡池',
+        bannerImage: gachaBannerImage(pool),
+        moodImage: gachaMoodImage(total, ssr),
+        subtitle: pool.beginAt && pool.endAt ? `${pool.beginAt} ~ ${pool.endAt}` : '',
+        totalPullCount: total,
+        ssrCount: ssr,
+        avgPity: hasGachaValue(pool.average) ? String(pool.average).replace(/\.0$/, '') : (ssr > 0 ? Math.round(total / ssr) : '—'),
+        items: details.slice(0, 30)
+      }
+    })
+    .filter((section) => section.totalPullCount > 0 || section.items.length > 0)
+    .sort((a, b) => gachaSectionRank(a) - gachaSectionRank(b))
+
+  return {
+    pageTitle: '异环抽卡分析',
+    roleName: data.rolename || data.roleName || data.userid || data.userId || '异环',
+    uid: data.roleid || data.roleId || data.uid || data.accountUid || '',
+    roleLevel: data.lev ?? profile.lev ?? '',
+    avatarUrl: qqAvatarUrl(e),
+    overview: {
+      totalPullCount,
+      totalSsrCount,
+      rating: data.luckTitle || profile.luckTitle || gachaRating(totalPullCount, totalSsrCount)
+    },
+    sections
+  }
+}
+
 function buildYihuanGachaMessages(data = {}) {
   if (!data || typeof data !== 'object' || data.cache?.exists === false) {
     return ['异环抽卡分析\n暂无抽卡缓存，请发送 yh同步抽卡 / yh更新抽卡 / yh同步抽卡记录']
@@ -1202,6 +1333,14 @@ export class profile extends plugin {
     return true
   }
 
+  async replyYihuanGachaAnalysis(data = {}) {
+    const rendered = await renderYihuanCard(this.e, 'gacha', buildYihuanGachaRenderData(this.e, data))
+    if (rendered) return true
+
+    await this.replyForward(buildYihuanGachaMessages(data), '异环抽卡分析')
+    return true
+  }
+
   async yihuanGacha() {
     const tjdUser = await this.getCurrentUser()
     if (!tjdUser) return true
@@ -1225,11 +1364,11 @@ export class profile extends plugin {
         return true
       }
 
-      await this.replyForward(buildYihuanGachaMessages(result.data), '异环抽卡分析')
+      await this.replyYihuanGachaAnalysis(result.data)
       return true
     }
 
-    await this.replyForward(buildYihuanGachaMessages(data), '异环抽卡分析')
+    await this.replyYihuanGachaAnalysis(data)
     return true
   }
 
@@ -1301,7 +1440,7 @@ export class profile extends plugin {
       return true
     }
 
-    await this.replyForward(buildYihuanGachaMessages(result.data), '异环抽卡分析')
+    await this.replyYihuanGachaAnalysis(result.data)
     return true
   }
 
@@ -1320,7 +1459,7 @@ export class profile extends plugin {
       return true
     }
 
-    await this.replyForward(buildYihuanGachaMessages(result.data), '异环抽卡分析')
+    await this.replyYihuanGachaAnalysis(result.data)
     return true
   }
 
