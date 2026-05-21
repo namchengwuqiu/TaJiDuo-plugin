@@ -2,6 +2,7 @@ import TaJiDuoUser, { addOrUpdateAccount } from '../model/tajiduoUser.js'
 import TaJiDuoRequest from '../model/tajiduoReq.js'
 import { resolveYihuanAlias } from '../utils/yihuanAlias.js'
 import { randomCardLongId } from '../utils/yihuanRender.js'
+import setting from '../utils/setting.js'
 import {
   compactLine,
   formatTime,
@@ -783,6 +784,153 @@ function formatGachaDetailLine(item = {}) {
   return parts.join(' | ')
 }
 
+function buildYihuanGachaMessages(data = {}) {
+  if (!data || typeof data !== 'object' || data.cache?.exists === false) {
+    return ['异环抽卡分析\n暂无抽卡缓存，请发送 yh同步抽卡 / yh更新抽卡 / yh同步抽卡记录']
+  }
+
+  const profile = data.profile || {}
+  const summary = data.summary || {}
+  const pools = toArray(data.pools || data.gachaDetails)
+  const poolDraw = pools.reduce((sum, item) => sum + (Number(item.drawCount) || 0), 0)
+  const poolRareValues = pools.map((item) => item.rareCount).filter(hasGachaValue)
+  const poolRare = poolRareValues.reduce((sum, value) => sum + (Number(value) || 0), 0)
+  const poolRecords = pools.reduce((sum, item) => sum + (Number(item.recordCount) || toArray(item.details).length), 0)
+  const rareCount = summary.rareCount ?? data.rareCount ?? (poolRareValues.length ? poolRare : undefined)
+  const header = [
+    '异环抽卡分析',
+    compactLine('角色', data.rolename || data.roleName || data.userid || data.userId),
+    compactLine('UID', data.roleid || data.roleId || data.uid || data.accountUid),
+    compactLine('等级', data.lev ?? profile.lev),
+    optionalGachaLine('欧气评价', data.luckTitle ?? profile.luckTitle),
+    compactLine('总抽数', summary.totalDrawCount ?? summary.detailCount ?? data.drawCount ?? poolDraw),
+    optionalGachaLine('稀有次数', rareCount),
+    compactLine('出货记录数', summary.recordCount ?? poolRecords),
+    compactLine('池子数量', summary.poolCount ?? pools.length),
+    compactLine('更新时间', data.updatedAt || data.fetchedAt)
+  ].filter(Boolean)
+  const messages = [header.join('\n')]
+
+  for (const pool of pools) {
+    const details = toArray(pool.details)
+    const lines = [
+      pool.pool || pool.tab || pool.name || '未命名卡池',
+      compactLine('抽数', pool.drawCount),
+      optionalGachaLine('稀有次数', pool.rareCount),
+      compactLine('出货记录数', pool.recordCount ?? details.length),
+      optionalGachaLine('平均出货', pool.average),
+      optionalGachaLine('超过玩家', pool.playerOver),
+      optionalGachaLine('保底', pool.m)
+    ].filter(Boolean)
+    if (details.length > 0) {
+      lines.push('出货明细：')
+      details.slice(0, 20).forEach((item, index) => {
+        lines.push(`${index + 1}. ${formatGachaDetailLine(item)}`)
+      })
+      if (details.length > 20) lines.push(`还有 ${details.length - 20} 条记录未展示`)
+    } else {
+      lines.push('暂无出货记录')
+    }
+    messages.push(lines.join('\n'))
+  }
+
+  if (pools.length === 0) messages.push(getMessage('common.no_data'))
+  return messages.filter((message) => cleanSpaces(message))
+}
+
+function buildYihuanGachaClassicRenderData(e, data = {}) {
+  if (!data || typeof data !== 'object' || data.cache?.exists === false) {
+    return null
+  }
+
+  const profile = data.profile || {}
+  const summary = data.summary || {}
+  const pools = toArray(data.pools || data.gachaDetails)
+  const poolDraw = pools.reduce((sum, item) => sum + (Number(item.drawCount) || 0), 0)
+  const poolRareValues = pools.map((item) => item.rareCount).filter(hasGachaValue)
+  const poolRare = poolRareValues.reduce((sum, value) => sum + (Number(value) || 0), 0)
+  const poolRecords = pools.reduce((sum, item) => sum + (Number(item.recordCount) || toArray(item.details).length), 0)
+  const rareCount = summary.rareCount ?? data.rareCount ?? (poolRareValues.length ? poolRare : undefined)
+
+  const luckBadgeMap = {
+    '欧皇': { text: '欧皇', color: '#f2ff25' },
+    '非酋': { text: '非酋', color: '#eb5064' },
+    '普通': { text: '普通', color: '#7cecfc' }
+  }
+  const luckInfo = luckBadgeMap[data.luckTitle ?? profile.luckTitle] || null
+
+  const renderPools = pools.map((pool) => {
+    const details = toArray(pool.details)
+    const totalDraws = Number(pool.drawCount) || 0
+    const maxPity = Number(pool.m) || 80
+    const playerOver = pool.playerOver
+
+    const records = details.slice(0, 20).map((item) => {
+      const pulls = Number(item.rareCount) || 0
+      const progressPercent = maxPity > 0 ? Math.min(100, Math.round((pulls / maxPity) * 100)) : 0
+
+      let progressColor = 'linear-gradient(90deg, #7cecfc, #ff6da3)'
+      if (progressPercent >= 75) {
+        progressColor = 'linear-gradient(90deg, #ff6da3, #eb5064)'
+      } else if (progressPercent >= 50) {
+        progressColor = 'linear-gradient(90deg, #f2ff25, #ff6da3)'
+      }
+
+      const timeStamp = Number(item.timeStamp ?? item.timestamp ?? 0)
+      let date = ''
+      if (Number.isFinite(timeStamp) && timeStamp > 0) {
+        const d = new Date(timeStamp < 1e12 ? timeStamp * 1000 : timeStamp)
+        date = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      } else {
+        date = item.drawAt || item.time || item.createdAt || ''
+      }
+
+      const charId = item.charId || item.charid || item.id || ''
+      const avatarUrl = charId ? characterAvatarUrl(charId) : ''
+
+      let tag = ''
+      let tagColor = ''
+      if (item.luckyType === '1' || item.luckyType === 1) {
+        tag = '小保底'
+        tagColor = '#7cecfc'
+      } else if (item.luckyType === '2' || item.luckyType === 2) {
+        tag = '大保底'
+        tagColor = '#f2ff25'
+      }
+
+      return {
+        date,
+        avatarUrl,
+        name: gachaItemName(item),
+        pulls,
+        progressPercent,
+        progressColor,
+        tag,
+        tagColor
+      }
+    })
+
+    return {
+      poolName: pool.pool || pool.tab || pool.name || '未命名卡池',
+      totalDraws,
+      playerOver,
+      luckBadge: luckInfo?.text || '',
+      luckBadgeColor: luckInfo?.color || '',
+      records
+    }
+  })
+
+  return {
+    pageTitle: '异环抽卡分析',
+    roleName: data.rolename || data.roleName || data.userid || data.userId || '异环',
+    uid: data.roleid || data.roleId || data.uid || data.accountUid || '',
+    roleLevel: data.lev ?? profile.lev ?? '',
+    avatarUrl: qqAvatarUrl(e),
+    footerText: 'Created By Yunzai-Bot & TaJiDuo-plugin',
+    pools: renderPools
+  }
+}
+
 const GACHA_RATING_TABLE = [
   { limit: 15, label: '欧气附体天选人' },
   { limit: 40, label: '协议签订幸运儿' },
@@ -860,7 +1008,10 @@ function gachaPityClass(pity = 0) {
   return ''
 }
 
-function buildYihuanGachaRenderData(e, data = {}) {
+function buildYihuanGachaCardRenderData(e, data = {}) {
+  if (!data || typeof data !== 'object' || data.cache?.exists === false) {
+    return null
+  }
   const profile = data.profile || {}
   const summary = data.summary || {}
   const rawPools = toArray(data.pools || data.gachaDetails)
@@ -914,58 +1065,15 @@ function buildYihuanGachaRenderData(e, data = {}) {
   }
 }
 
-function buildYihuanGachaMessages(data = {}) {
-  if (!data || typeof data !== 'object' || data.cache?.exists === false) {
-    return ['异环抽卡分析\n暂无抽卡缓存，请发送 yh同步抽卡 / yh更新抽卡 / yh同步抽卡记录']
+const YIHUAN_GACHA_TEMPLATES = {
+  card: {
+    file: 'gacha_card',
+    build: buildYihuanGachaCardRenderData
+  },
+  classic: {
+    file: 'gacha_classic',
+    build: buildYihuanGachaClassicRenderData
   }
-
-  const profile = data.profile || {}
-  const summary = data.summary || {}
-  const pools = toArray(data.pools || data.gachaDetails)
-  const poolDraw = pools.reduce((sum, item) => sum + (Number(item.drawCount) || 0), 0)
-  const poolRareValues = pools.map((item) => item.rareCount).filter(hasGachaValue)
-  const poolRare = poolRareValues.reduce((sum, value) => sum + (Number(value) || 0), 0)
-  const poolRecords = pools.reduce((sum, item) => sum + (Number(item.recordCount) || toArray(item.details).length), 0)
-  const rareCount = summary.rareCount ?? data.rareCount ?? (poolRareValues.length ? poolRare : undefined)
-  const header = [
-    '异环抽卡分析',
-    compactLine('角色', data.rolename || data.roleName || data.userid || data.userId),
-    compactLine('UID', data.roleid || data.roleId || data.uid || data.accountUid),
-    compactLine('等级', data.lev ?? profile.lev),
-    optionalGachaLine('欧气评价', data.luckTitle ?? profile.luckTitle),
-    compactLine('总抽数', summary.totalDrawCount ?? summary.detailCount ?? data.drawCount ?? poolDraw),
-    optionalGachaLine('稀有次数', rareCount),
-    compactLine('出货记录数', summary.recordCount ?? poolRecords),
-    compactLine('池子数量', summary.poolCount ?? pools.length),
-    compactLine('更新时间', data.updatedAt || data.fetchedAt)
-  ].filter(Boolean)
-  const messages = [header.join('\n')]
-
-  for (const pool of pools) {
-    const details = toArray(pool.details)
-    const lines = [
-      pool.pool || pool.tab || pool.name || '未命名卡池',
-      compactLine('抽数', pool.drawCount),
-      optionalGachaLine('稀有次数', pool.rareCount),
-      compactLine('出货记录数', pool.recordCount ?? details.length),
-      optionalGachaLine('平均出货', pool.average),
-      optionalGachaLine('超过玩家', pool.playerOver),
-      optionalGachaLine('保底', pool.m)
-    ].filter(Boolean)
-    if (details.length > 0) {
-      lines.push('出货明细：')
-      details.slice(0, 20).forEach((item, index) => {
-        lines.push(`${index + 1}. ${formatGachaDetailLine(item)}`)
-      })
-      if (details.length > 20) lines.push(`还有 ${details.length - 20} 条记录未展示`)
-    } else {
-      lines.push('暂无出货记录')
-    }
-    messages.push(lines.join('\n'))
-  }
-
-  if (pools.length === 0) messages.push(getMessage('common.no_data'))
-  return messages.filter((message) => cleanSpaces(message))
 }
 
 function formatStatsNumber(value) {
@@ -1170,6 +1278,22 @@ export class profile extends plugin {
     })
   }
 
+  async replyYihuanGachaAnalysis(data = {}) {
+    const templateKey = setting.getConfig('common')?.yihuan_gacha_template || 'card'
+    const template = YIHUAN_GACHA_TEMPLATES[templateKey] || YIHUAN_GACHA_TEMPLATES.card
+
+    const renderData = template.build(this.e, data)
+    let rendered = false
+    if (renderData) {
+      rendered = await renderYihuanCard(this.e, template.file, renderData)
+    }
+
+    if (rendered) return true
+
+    await this.replyForward(buildYihuanGachaMessages(data), '异环抽卡分析')
+    return true
+  }
+
   async getCurrentUser() {
     const userId = this.e.at || this.e.user_id
     const tjdUser = new TaJiDuoUser(userId)
@@ -1333,14 +1457,6 @@ export class profile extends plugin {
     return true
   }
 
-  async replyYihuanGachaAnalysis(data = {}) {
-    const rendered = await renderYihuanCard(this.e, 'gacha', buildYihuanGachaRenderData(this.e, data))
-    if (rendered) return true
-
-    await this.replyForward(buildYihuanGachaMessages(data), '异环抽卡分析')
-    return true
-  }
-
   async yihuanGacha() {
     const tjdUser = await this.getCurrentUser()
     if (!tjdUser) return true
@@ -1439,7 +1555,6 @@ export class profile extends plugin {
       await this.reply(`异环抽卡同步仍在后台执行\n任务ID：${result.task?.taskId || '未知'}\n状态：${result.task?.status || 'pending'}\n稍后可发送 yh抽卡分析 查看缓存结果；后续同步可用 yh同步抽卡 / yh更新抽卡 / yh同步抽卡记录`)
       return true
     }
-
     await this.replyYihuanGachaAnalysis(result.data)
     return true
   }

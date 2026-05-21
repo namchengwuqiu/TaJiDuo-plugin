@@ -70,6 +70,22 @@ export default function getCommonSchemas() {
       componentProps: {
         placeholder: 'http://127.0.0.1:25188'
       }
+    },
+    {
+      component: 'Divider',
+      label: '异环设置'
+    },
+    {
+      field: 'yihuan_gacha_template',
+      label: '抽卡分析模版',
+      bottomHelpMessage: '设置异环抽卡分析图片使用的模版样式',
+      component: 'Select',
+      componentProps: {
+        options: [
+          { label: '卡片网格 (主仓库)', value: 'card' },
+          { label: '经典列表 (PR仓库)', value: 'classic' }
+        ]
+      }
     }
   ]
 }

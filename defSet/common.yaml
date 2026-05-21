@@ -12,3 +12,6 @@ login_server:
   port: 25188
   # 对外展示给用户的登录服务地址；如果部署在公网或反代后，请改成公网地址
   public_link: "http://127.0.0.1:25188"
+
+# 异环抽卡分析图片模版：card (卡片网格) 或 classic (经典列表)
+yihuan_gacha_template: "card"
