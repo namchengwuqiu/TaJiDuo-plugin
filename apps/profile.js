@@ -865,6 +865,8 @@ function buildYihuanGachaClassicRenderData(e, data = {}) {
     const totalDraws = Number(pool.drawCount) || 0
     const maxPity = Number(pool.m) || 80
     const playerOver = pool.playerOver
+    const poolName = pool.pool || pool.tab || pool.name || '未命名卡池'
+    const isWeaponPool = poolName.includes('弧盘') || poolName.includes('武器') || poolName.includes('精密')
 
     const records = details.slice(0, 20).map((item) => {
       const pulls = Number(item.rareCount) || 0
@@ -883,7 +885,7 @@ function buildYihuanGachaClassicRenderData(e, data = {}) {
         date = item.drawAt || item.time || item.createdAt || ''
       }
 
-      const avatarUrl = gachaItemIconUrl(item)
+      const avatarUrl = gachaItemIconUrl(item, isWeaponPool)
 
       let tag = ''
       let tagColor = ''
@@ -908,7 +910,6 @@ function buildYihuanGachaClassicRenderData(e, data = {}) {
       }
     })
 
-    const poolName = pool.pool || pool.tab || pool.name || '未命名卡池'
     const poolClass = poolName.includes('限定') ? 'pool-limited' : (poolName.includes('弧盘') ? 'pool-special' : 'pool-standard')
 
     return {
@@ -997,9 +998,13 @@ function gachaItemId(item = {}) {
   return String(item.charid || item.charId || item.itemId || item.id || '').trim()
 }
 
-function gachaItemIconUrl(item = {}) {
+function gachaItemIconUrl(item = {}, isWeaponPool = false) {
   const id = gachaItemId(item)
-  if (id.startsWith('fork_')) return weaponImageUrl(id)
+  const isFork = id.startsWith('fork_') || item.itemType === 'fork' || item.itemtype === 'fork' || isWeaponPool
+  if (isFork) {
+    const forkId = id.startsWith('fork_') ? id : 'fork_' + id
+    return weaponImageUrl(forkId)
+  }
   return characterAvatarUrl(id || '1')
 }
 
@@ -1023,12 +1028,14 @@ function buildYihuanGachaCardRenderData(e, data = {}) {
   const totalSsrCount = gachaNumber(summary.rareCount ?? data.rareCount, poolRare)
   const sections = rawPools
     .map((pool) => {
+      const poolName = pool.pool || pool.tab || pool.name || '未命名卡池'
+      const isWeaponPool = poolName.includes('弧盘') || poolName.includes('武器') || poolName.includes('精密')
       const details = toArray(pool.details)
         .map((item) => {
           const pity = gachaNumber(item.rareCount ?? item.pity ?? item.itemCount, 0)
           return {
             name: String(gachaItemName(item)).replace(/角色卡$/, ''),
-            iconUrl: gachaItemIconUrl(item),
+            iconUrl: gachaItemIconUrl(item, isWeaponPool),
             pity,
             pityClass: gachaPityClass(pity),
             timeText: gachaShortTime(item)
@@ -1039,7 +1046,7 @@ function buildYihuanGachaCardRenderData(e, data = {}) {
       const total = gachaNumber(pool.drawCount)
       const ssr = gachaNumber(pool.rareCount, details.length)
       return {
-        bannerName: pool.pool || pool.tab || pool.name || '未命名卡池',
+        bannerName: poolName,
         bannerImage: gachaBannerImage(pool),
         moodImage: gachaMoodImage(total, ssr),
         subtitle: pool.beginAt && pool.endAt ? `${pool.beginAt} ~ ${pool.endAt}` : '',
