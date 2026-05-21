@@ -21,10 +21,6 @@
     <section class="gacha-pool-section">
       <div class="gacha-pool-header">
         <div class="gacha-pool-title">{{pool.poolName}}</div>
-        <div class="gacha-pool-stats">
-          <span class="gacha-pool-total">总{{pool.totalDraws}}抽</span>
-          {{if pool.playerOver}}<span class="gacha-pool-over">已超过{{pool.playerOver}}的玩家</span>{{/if}}
-        </div>
         {{if pool.luckBadge}}<div class="gacha-luck-badge" style="background: {{pool.luckBadgeColor}};">{{pool.luckBadge}}</div>{{/if}}
       </div>
 
@@ -45,13 +41,20 @@
               <div class="gacha-progress-fill" style="width: {{record.progressPercent}}%; background: {{record.progressColor}};"></div>
             </div>
           </div>
-          {{if record.tag}}<div class="gacha-record-tag" style="background: {{record.tagColor}};">{{record.tag}}</div>{{/if}}
+          <div class="gacha-record-tag {{if !record.tag}}tag-empty{{/if}}" style="{{if record.tag}}background: {{record.tagColor}};{{/if}}">
+            {{record.tag}}
+          </div>
         </div>
         {{/each}}
       </div>
       {{else}}
       <div class="gacha-empty">暂无出货记录</div>
       {{/if}}
+
+      <div class="gacha-pool-footer">
+        <div class="gacha-pool-total">总{{pool.totalDraws}}抽</div>
+        {{if pool.playerOver}}<div class="gacha-pool-over">已超过{{pool.playerOver}}的玩家</div>{{/if}}
+      </div>
     </section>
     {{/each}}
     {{else}}
