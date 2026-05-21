@@ -893,7 +893,7 @@ function buildYihuanGachaClassicRenderData(e, data = {}) {
         tag = '小保底'
         tagColor = '#7cecfc'
       } else if (item.luckyType === '2' || item.luckyType === 2) {
-        tag = '大保底'
+        tag = '保底'
         tagColor = '#f2ff25'
       }
 
