@@ -870,12 +870,9 @@ function buildYihuanGachaClassicRenderData(e, data = {}) {
       const pulls = Number(item.rareCount) || 0
       const progressPercent = maxPity > 0 ? Math.min(100, Math.round((pulls / maxPity) * 100)) : 0
 
-      let progressColor = 'linear-gradient(90deg, #7cecfc, #ff6da3)'
-      if (progressPercent >= 75) {
-        progressColor = 'linear-gradient(90deg, #ff6da3, #eb5064)'
-      } else if (progressPercent >= 50) {
-        progressColor = 'linear-gradient(90deg, #f2ff25, #ff6da3)'
-      }
+      const progressColor = pulls <= 40
+        ? 'linear-gradient(90deg, #7cecfc, #ff6da3)'
+        : 'linear-gradient(90deg, #ff6da3, #eb5064)'
 
       const timeStamp = Number(item.timeStamp ?? item.timestamp ?? 0)
       let date = ''
