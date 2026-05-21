@@ -883,8 +883,7 @@ function buildYihuanGachaClassicRenderData(e, data = {}) {
         date = item.drawAt || item.time || item.createdAt || ''
       }
 
-      const charId = item.charId || item.charid || item.id || ''
-      const avatarUrl = charId ? characterAvatarUrl(charId) : ''
+      const avatarUrl = gachaItemIconUrl(item)
 
       let tag = ''
       let tagColor = ''
