@@ -859,7 +859,8 @@ function buildYihuanGachaClassicRenderData(e, data = {}) {
   }
   const luckInfo = luckBadgeMap[data.luckTitle ?? profile.luckTitle] || null
 
-  const renderPools = pools.map((pool) => {
+  const sortedPools = pools.slice().sort((a, b) => gachaSectionRank(a) - gachaSectionRank(b))
+  const renderPools = sortedPools.map((pool) => {
     const details = toArray(pool.details)
     const totalDraws = Number(pool.drawCount) || 0
     const maxPity = Number(pool.m) || 80
@@ -906,17 +907,22 @@ function buildYihuanGachaClassicRenderData(e, data = {}) {
         progressPercent,
         progressColor,
         tag,
-        tagColor
+        tagColor,
+        maxPity
       }
     })
 
+    const poolName = pool.pool || pool.tab || pool.name || '未命名卡池'
+    const poolClass = poolName.includes('限定') ? 'pool-limited' : (poolName.includes('弧盘') ? 'pool-special' : 'pool-standard')
+
     return {
-      poolName: pool.pool || pool.tab || pool.name || '未命名卡池',
+      poolName,
       totalDraws,
       playerOver,
       luckBadge: luckInfo?.text || '',
       luckBadgeColor: luckInfo?.color || '',
-      records
+      records,
+      poolClass
     }
   })
 
