@@ -2072,7 +2072,355 @@ body.refresh-body {
   background: rgba(231, 231, 231, 0.94);
 }
 
-.gacha-page {
+.gacha-page-classic {
+  padding-bottom: 60px;
+  background-image:
+    linear-gradient(180deg, rgba(11, 12, 16, 0.65), rgba(11, 12, 16, 0.58)),
+    url("./img/bg.jpg");
+  background-color: #0b0c10;
+  background-size: cover;
+  background-position: center top;
+  background-attachment: fixed;
+}
+
+.gacha-page-classic .role-title {
+  height: 124px;
+  margin-bottom: 32px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #7cecfc, #ff6da3);
+  padding: 3px;
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.5),
+    0 0 25px rgba(124, 236, 252, 0.45),
+    inset 0 0 20px rgba(255, 109, 163, 0.25);
+  position: relative;
+  overflow: visible;
+}
+
+.gacha-page-classic .role-title-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 21px;
+  background: rgba(15, 16, 22, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  position: relative;
+  overflow: visible;
+}
+
+.gacha-page-classic .avatar-wrap {
+  width: 112px;
+  height: 112px;
+  left: -20px;
+  top: 4px;
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7cecfc, #ff6da3);
+  padding: 3px;
+  box-shadow:
+    0 0 20px rgba(255, 109, 163, 0.65),
+    0 0 20px rgba(124, 236, 252, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: none;
+  z-index: 3;
+}
+
+.gacha-page-classic .avatar-wrap img {
+  position: static;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid #15171b;
+  object-fit: cover;
+  box-shadow: none;
+}
+
+.gacha-page-classic .avatar-wrap::before,
+.gacha-page-classic .avatar-wrap::after {
+  display: none !important;
+}
+
+.gacha-page-classic .title-banner {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  border-radius: 22px;
+  background-size: cover;
+  background-position: right center;
+  mask-image: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.2) 20%, rgba(0, 0, 0, 0.8) 50%, #000 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.2) 20%, rgba(0, 0, 0, 0.8) 50%, #000 100%);
+  box-shadow: none;
+  z-index: 1;
+}
+
+.gacha-page-classic .role-name {
+  position: absolute;
+  color: #7cecfc;
+  font-size: 34px;
+  font-weight: 900;
+  text-shadow: 0 0 10px rgba(124, 236, 252, 0.5);
+  top: 24px;
+  left: 120px;
+  z-index: 4;
+}
+
+.gacha-page-classic .uid-pill {
+  position: absolute;
+  background: transparent;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 18px;
+  padding: 0;
+  top: 72px;
+  left: 120px;
+  z-index: 4;
+}
+
+.gacha-page-classic .title-level {
+  position: absolute;
+  right: 24px;
+  top: 30px;
+  width: 50px;
+  height: 56px;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #7cecfc, #ff6da3);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 0 8px rgba(255, 109, 163, 0.8));
+}
+
+.gacha-page-classic .title-level::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: #15171b;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  z-index: -1;
+}
+
+.gacha-page-classic .gacha-pool-section {
+  margin-bottom: 32px;
+  border-radius: 24px;
+  padding: 3px;
+}
+
+.gacha-page-classic .gacha-pool-section.pool-limited {
+  background: linear-gradient(135deg, #ff6da3, #eb5064);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.5),
+    0 0 25px rgba(255, 109, 163, 0.55),
+    inset 0 0 20px rgba(235, 80, 100, 0.3);
+}
+
+.gacha-page-classic .gacha-pool-section.pool-special {
+  background: linear-gradient(135deg, #b066ff, #ff6da3);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.5),
+    0 0 25px rgba(176, 102, 255, 0.55),
+    inset 0 0 20px rgba(255, 109, 163, 0.30);
+}
+
+.gacha-page-classic .gacha-pool-section.pool-standard {
+  background: linear-gradient(135deg, #7cecfc, #ff6da3);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.5),
+    0 0 25px rgba(124, 236, 252, 0.45),
+    inset 0 0 20px rgba(255, 109, 163, 0.25);
+}
+
+.gacha-page-classic .gacha-pool-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 21px;
+  background: rgba(15, 16, 22, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 22px 26px;
+}
+
+.gacha-page-classic .gacha-pool-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gacha-page-classic .gacha-pool-title {
+  color: #ffffff;
+  font-size: 32px;
+  font-weight: 900;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+.gacha-page-classic .gacha-luck-badge {
+  margin-left: auto;
+  padding: 6px 16px;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 900;
+  border-radius: 999px;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.gacha-page-classic .gacha-records {
+  display: grid;
+  gap: 12px;
+}
+
+.gacha-page-classic .gacha-record-item {
+  display: grid;
+  grid-template-columns: 64px 56px 1fr auto 80px;
+  align-items: center;
+  gap: 14px;
+  min-height: 72px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: rgba(20, 22, 29, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.03);
+}
+
+.gacha-page-classic .gacha-record-date {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 18px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.gacha-page-classic .gacha-record-avatar {
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #111318;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.1),
+    0 0 0 5px rgba(10, 11, 15, 0.5);
+}
+
+.gacha-page-classic .gacha-record-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gacha-page-classic .gacha-record-info {
+  min-width: 0;
+}
+
+.gacha-page-classic .gacha-record-name {
+  color: #ffffff;
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gacha-page-classic .gacha-record-pulls {
+  margin-top: 4px;
+  color: #ff5f9e;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.gacha-page-classic .gacha-record-progress {
+  width: 180px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: 56px;
+}
+
+.gacha-page-classic .gacha-progress-bar {
+  width: 100%;
+  height: 18px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #111318;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.gacha-page-classic .gacha-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7cecfc, #ff6da3);
+  transition: width 0.3s ease;
+}
+
+.gacha-page-classic .gacha-record-tag {
+  padding: 4px 10px;
+  color: #111318;
+  font-size: 15px;
+  font-weight: 900;
+  text-align: center;
+  border-radius: 6px;
+  white-space: nowrap;
+  width: 80px;
+  box-sizing: border-box;
+}
+
+.gacha-page-classic .gacha-record-tag.tag-empty {
+  visibility: hidden;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.gacha-page-classic .gacha-empty {
+  padding: 36px;
+  color: #d7d7de;
+  font-size: 26px;
+  text-align: center;
+  border-radius: 14px;
+  background: rgba(30, 32, 38, 0.72);
+}
+
+.gacha-page-classic .gacha-pool-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gacha-page-classic .gacha-pool-total {
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 900;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+.gacha-page-classic .gacha-pool-over {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 18px;
+  font-weight: 800;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+
+.gacha-page-card {
   padding-left: 0;
   padding-right: 0;
   background-image:

@@ -79,6 +79,7 @@ function normalizeCommon(common = {}) {
     base_url: 'https://tajiduo.shallow.ink',
     api_key: '',
     timeout: 25000,
+    yihuan_gacha_template: 'card',
     login_server: {
       enabled: true,
       port: 25188,
@@ -181,6 +182,7 @@ export function supportGuoba() {
           base_url: common.base_url,
           api_key: common.api_key,
           timeout: common.timeout,
+          yihuan_gacha_template: common.yihuan_gacha_template,
           'login_server.enabled': common.login_server.enabled,
           'login_server.port': common.login_server.port,
           'login_server.public_link': common.login_server.public_link,
@@ -204,6 +206,7 @@ export function supportGuoba() {
             'base_url',
             'api_key',
             'timeout',
+            'yihuan_gacha_template',
             'login_server.enabled',
             'login_server.port',
             'login_server.public_link'
