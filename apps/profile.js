@@ -887,16 +887,6 @@ function buildYihuanGachaClassicRenderData(e, data = {}) {
 
       const avatarUrl = gachaItemIconUrl(item, isWeaponPool)
 
-      let tag = ''
-      let tagColor = ''
-      if (item.luckyType === '1' || item.luckyType === 1) {
-        tag = '小保底'
-        tagColor = '#7cecfc'
-      } else if (item.luckyType === '2' || item.luckyType === 2) {
-        tag = '保底'
-        tagColor = '#f2ff25'
-      }
-
       return {
         date,
         avatarUrl,
@@ -904,8 +894,8 @@ function buildYihuanGachaClassicRenderData(e, data = {}) {
         pulls,
         progressPercent,
         progressColor,
-        tag,
-        tagColor,
+        tag: '',
+        tagColor: '',
         maxPity
       }
     })
